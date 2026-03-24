@@ -1,0 +1,393 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+app.js
+eslint.config.mjs
+package.json
+server.js
+tests/citas.test.js
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="app.js">
+const express = require('express');
+const app = express();
+
+app.use(express.json());
+
+// In-memory storage for citas (appointments)
+let citas = [];
+let nextId = 1;
+
+// GET /citas - List all appointments
+app.get('/citas', (req, res) => {
+  res.json(citas);
+});
+
+// GET /citas/:id - Get a single appointment
+app.get('/citas/:id', (req, res) => {
+  const cita = citas.find(c => c.id === parseInt(req.params.id));
+  if (!cita) {
+    return res.status(404).json({ error: 'Cita no encontrada' });
+  }
+  res.json(cita);
+});
+
+// POST /citas - Create a new appointment
+app.post('/citas', (req, res) => {
+  const { titulo, fecha, hora, descripcion } = req.body;
+
+  if (!titulo || !fecha || !hora) {
+    return res.status(400).json({ error: 'Titulo, fecha y hora son requeridos' });
+  }
+
+  const nuevaCita = {
+    id: nextId++,
+    titulo,
+    fecha,
+    hora,
+    descripcion: descripcion || '',
+    createdAt: new Date().toISOString()
+  };
+
+  citas.push(nuevaCita);
+  res.status(201).json(nuevaCita);
+});
+
+// PUT /citas/:id - Update an appointment
+app.put('/citas/:id', (req, res) => {
+  const index = citas.findIndex(c => c.id === parseInt(req.params.id));
+  if (index === -1) {
+    return res.status(404).json({ error: 'Cita no encontrada' });
+  }
+
+  const { titulo, fecha, hora, descripcion } = req.body;
+
+  if (!titulo || !fecha || !hora) {
+    return res.status(400).json({ error: 'Titulo, fecha y hora son requeridos' });
+  }
+
+  citas[index] = {
+    ...citas[index],
+    titulo,
+    fecha,
+    hora,
+    descripcion: descripcion || citas[index].descripcion
+  };
+
+  res.json(citas[index]);
+});
+
+// DELETE /citas/:id - Delete an appointment
+app.delete('/citas/:id', (req, res) => {
+  const index = citas.findIndex(c => c.id === parseInt(req.params.id));
+  if (index === -1) {
+    return res.status(404).json({ error: 'Cita no encontrada' });
+  }
+
+  const deleted = citas.splice(index, 1)[0];
+  res.json({ message: 'Cita eliminada', cita: deleted });
+});
+
+// Helper to reset state (used in tests)
+app._resetCitas = () => {
+  citas = [];
+  nextId = 1;
+};
+
+module.exports = app;
+</file>
+
+<file path="eslint.config.mjs">
+import js from "@eslint/js";
+import globals from "globals";
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  { files: ["**/*.{js,mjs,cjs}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.browser } },
+  { files: ["**/*.js"], languageOptions: { sourceType: "commonjs" } },
+]);
+</file>
+
+<file path="package.json">
+{
+  "name": "proyecto1-scheduling",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stevejason25/proyecto1-scheduling.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/stevejason25/proyecto1-scheduling/issues"
+  },
+  "homepage": "https://github.com/stevejason25/proyecto1-scheduling#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.1.0",
+    "globals": "^17.4.0",
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2"
+  }
+}
+</file>
+
+<file path="server.js">
+const app = require('./app');
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+});
+</file>
+
+<file path="tests/citas.test.js">
+const request = require('supertest');
+const app = require('../app');
+
+// Reset state before each test
+beforeEach(() => {
+  app._resetCitas();
+});
+
+describe('GET /citas', () => {
+  test('debe retornar un array vacío cuando no hay citas', async () => {
+    const res = await request(app).get('/citas');
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  test('debe retornar todas las citas existentes', async () => {
+    // Create two appointments first
+    await request(app).post('/citas').send({
+      titulo: 'Cita 1',
+      fecha: '2026-04-01',
+      hora: '10:00'
+    });
+    await request(app).post('/citas').send({
+      titulo: 'Cita 2',
+      fecha: '2026-04-02',
+      hora: '14:00'
+    });
+
+    const res = await request(app).get('/citas');
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveLength(2);
+  });
+});
+
+describe('GET /citas/:id', () => {
+  test('debe retornar una cita por su ID', async () => {
+    const created = await request(app).post('/citas').send({
+      titulo: 'Mi cita',
+      fecha: '2026-04-01',
+      hora: '09:00',
+      descripcion: 'Consulta médica'
+    });
+
+    const res = await request(app).get(`/citas/${created.body.id}`);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.titulo).toBe('Mi cita');
+    expect(res.body.descripcion).toBe('Consulta médica');
+  });
+
+  test('debe retornar 404 si la cita no existe', async () => {
+    const res = await request(app).get('/citas/999');
+    expect(res.statusCode).toBe(404);
+    expect(res.body.error).toBe('Cita no encontrada');
+  });
+});
+
+describe('POST /citas', () => {
+  test('debe crear una nueva cita correctamente', async () => {
+    const res = await request(app).post('/citas').send({
+      titulo: 'Reunión',
+      fecha: '2026-05-10',
+      hora: '15:30',
+      descripcion: 'Reunión de equipo'
+    });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toHaveProperty('id');
+    expect(res.body.titulo).toBe('Reunión');
+    expect(res.body.fecha).toBe('2026-05-10');
+    expect(res.body.hora).toBe('15:30');
+    expect(res.body.descripcion).toBe('Reunión de equipo');
+    expect(res.body).toHaveProperty('createdAt');
+  });
+
+  test('debe crear una cita sin descripción (campo opcional)', async () => {
+    const res = await request(app).post('/citas').send({
+      titulo: 'Cita rápida',
+      fecha: '2026-05-11',
+      hora: '08:00'
+    });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body.descripcion).toBe('');
+  });
+
+  test('debe retornar 400 si falta el titulo', async () => {
+    const res = await request(app).post('/citas').send({
+      fecha: '2026-05-10',
+      hora: '15:30'
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe('Titulo, fecha y hora son requeridos');
+  });
+
+  test('debe retornar 400 si falta la fecha', async () => {
+    const res = await request(app).post('/citas').send({
+      titulo: 'Reunión',
+      hora: '15:30'
+    });
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  test('debe retornar 400 si falta la hora', async () => {
+    const res = await request(app).post('/citas').send({
+      titulo: 'Reunión',
+      fecha: '2026-05-10'
+    });
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  test('debe retornar 400 si el body está vacío', async () => {
+    const res = await request(app).post('/citas').send({});
+    expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('PUT /citas/:id', () => {
+  test('debe actualizar una cita existente', async () => {
+    const created = await request(app).post('/citas').send({
+      titulo: 'Cita original',
+      fecha: '2026-06-01',
+      hora: '10:00',
+      descripcion: 'Descripción original'
+    });
+
+    const res = await request(app).put(`/citas/${created.body.id}`).send({
+      titulo: 'Cita actualizada',
+      fecha: '2026-06-15',
+      hora: '11:00',
+      descripcion: 'Descripción actualizada'
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.titulo).toBe('Cita actualizada');
+    expect(res.body.fecha).toBe('2026-06-15');
+    expect(res.body.hora).toBe('11:00');
+    expect(res.body.descripcion).toBe('Descripción actualizada');
+  });
+
+  test('debe retornar 404 al actualizar una cita que no existe', async () => {
+    const res = await request(app).put('/citas/999').send({
+      titulo: 'Cita inexistente',
+      fecha: '2026-06-01',
+      hora: '10:00'
+    });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body.error).toBe('Cita no encontrada');
+  });
+
+  test('debe retornar 400 si faltan campos requeridos al actualizar', async () => {
+    const created = await request(app).post('/citas').send({
+      titulo: 'Cita',
+      fecha: '2026-06-01',
+      hora: '10:00'
+    });
+
+    const res = await request(app).put(`/citas/${created.body.id}`).send({
+      titulo: 'Solo titulo'
+    });
+
+    expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('DELETE /citas/:id', () => {
+  test('debe eliminar una cita existente', async () => {
+    const created = await request(app).post('/citas').send({
+      titulo: 'Cita a eliminar',
+      fecha: '2026-07-01',
+      hora: '12:00'
+    });
+
+    const res = await request(app).delete(`/citas/${created.body.id}`);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.message).toBe('Cita eliminada');
+    expect(res.body.cita.titulo).toBe('Cita a eliminar');
+
+    // Verify it was actually deleted
+    const check = await request(app).get(`/citas/${created.body.id}`);
+    expect(check.statusCode).toBe(404);
+  });
+
+  test('debe retornar 404 al eliminar una cita que no existe', async () => {
+    const res = await request(app).delete('/citas/999');
+    expect(res.statusCode).toBe(404);
+    expect(res.body.error).toBe('Cita no encontrada');
+  });
+});
+</file>
+
+</files>
