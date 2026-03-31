@@ -72,4 +72,17 @@ app.delete('/citas/:id', (req, res) => {
   res.status(204).send(); // O res.status(200).json({ mensaje: "Cita eliminada" });
 });
 
+    // GET /horarios - Obtener horarios filtrados
+app.get('/horarios', (req, res) => {
+  const { vista } = req.query; // Ejemplo: /horarios?vista=semanal
+
+  // Filtramos o estructuramos según lo que pida la vista
+  res.json({
+    tipo_horario: vista || 'diario',
+    total_citas: citas.length,
+    citas: citas,
+    formato: "JSON" // Como pediste en la pizarra
+  });
+});
+
 module.exports = app;
