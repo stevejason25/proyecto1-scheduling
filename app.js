@@ -59,5 +59,17 @@ app.put('/citas/:id', (req, res) => {
 
     res.json(citas[index]);
 });
+    // DELETE /citas/:id - Cancelar una cita
+app.delete('/citas/:id', (req, res) => {
+  const idCita = parseInt(req.params.id);
+  const index = citas.findIndex(c => c.id === idCita);
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Cita no encontrada' });
+  }
+
+  citas.splice(index, 1);
+  res.status(204).send(); // O res.status(200).json({ mensaje: "Cita eliminada" });
+});
 
 module.exports = app;
